@@ -95,13 +95,19 @@ android {
             keyPassword 'android'
         }
     }
+    splits {
+        abi {
+            reset()
+            enable false
+            universalApk true
+        }
+    }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
+            // Using debug signing for easy sharing for now
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"

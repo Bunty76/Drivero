@@ -9,75 +9,46 @@ A professional React Native application built for drivers, featuring real-time r
 - 🔐 **Secure Driver Login**: Authentication system for drivers to access their dashboard.
 - 🏠 **Home Dashboard**: Overview of driver statistics and status.
 - 🟢 **Online/Offline System**: Toggle availability to start receiving ride requests.
-- 📍 **Live Location Tracking**: Real-time GPS tracking (including background support).
-- 🔌 **Socket.IO Integration**: Persistent real-time connection for instant updates.
-- 🚨 **Ride Request Popup**: Interactive system for accepting or rejecting incoming rides.
-- 🧪 **Test Ride Generator**: Built-in tool for development and testing of the ride flow.
+- 📍 **Live Location Tracking**: Real-time GPS updates sent to the backend via GeoJSON (with background support).
+- 🔌 **Socket.IO Engine**: Persistent real-time connection for instant ride requests and cancellations.
+- 🚨 **Ride Interaction**: Interactive popups to **Accept** or **Reject** rides instantly.
+- 🔒 **Safe Session Management**: Restricts logout while Online to ensure location tracking integrity.
+- 🧪 **E2E Testing**: Fully automated testing suite using **Detox**.
 
 ---
 
 ## 🧰 Tech Stack
 
-- **Framework**: React Native CLI (No Expo)
+- **Frontend**: React Native CLI (No Expo)
 - **Real-time**: Socket.IO Client
-- **Navigation**: React Navigation
+- **Navigation**: React Navigation (Stack)
 - **Location**: React Native Geolocation Services
-- **State Management**: Context API / Redux
-- **Storage**: AsyncStorage
-- **Backend Integration**: Node.js, Express, MongoDB (JWT Auth)
-
----
-
-## 📂 Project Structure
-
-```text
-src/
-├── api/          # Socket.IO and Axios configurations
-├── components/   # Reusable UI components (buttons, cards, popups)
-├── screens/      # Application screens (Login, Home, Profile)
-├── navigation/   # Stack and Tab navigators
-├── services/     # Location tracking and background services
-├── store/        # State management (Context/Redux)
-├── utils/        # Helper functions and constants
-└── assets/       # Images, fonts, and static resources
-```
+- **Backend**: Node.js, Express, MongoDB (Deployed on Render)
+- **Testing**: Detox (End-to-End)
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-- Node.js (v16+)
-- React Native CLI
-- Android Studio (for Android development)
-- Xcode (for iOS development - macOS only)
-- Ruby & CocoaPods (for iOS)
-
 ### Installation
 
-1. **Clone the repository**
+1. **Clone & Install**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Bunty76/Drivero.git
    cd Drivero
-   ```
-
-2. **Install dependencies**
-
-   ```bash
    npm install
    # or
    yarn install
    ```
 
-3. **Install iOS Dependencies (macOS only)**
+2. **Install iOS Dependencies (macOS only)**
 
    ```bash
    cd ios && pod install && cd ..
    ```
 
-4. **Environment Setup**
+3. **Environment Setup**
    Create a `.env` file in the root directory and add your backend URL:
    ```env
    API_URL=https://your-backend-api.com
@@ -86,26 +57,59 @@ src/
 
 ### Running the App
 
-#### Android
-
 ```bash
+# Start Metro Bundler
+npx react-native start
+
+# Run on Android Device/Emulator
 npx react-native run-android
 ```
 
-#### iOS
+---
 
-```bash
-npx react-native run-ios
+## 🧪 Testing (Detox E2E)
+
+The project includes a robust automated test suite that runs on real Android devices.
+
+**To run the tests:**
+
+1. Ensure your device is connected via ADB.
+2. Run the following command:
+   ```bash
+   npx detox test --configuration android.att.debug
+   ```
+   _This will test the full lifecycle: Registration -> Login -> Online/Offline Toggle -> Logout._
+
+---
+
+## 📦 Building for Production (Universal APK)
+
+To generate a single APK that works on **all Android devices**:
+
+1. **Generate the APK**:
+   ```bash
+   cd android
+   ./gradlew assembleRelease
+   ```
+2. **Find the file**:
+   The APK will be located at:
+   `android/app/build/outputs/apk/release/app-release.apk`
+
+---
+
+## 📂 Project Structure
+
+```text
+src/
+├── api/          # Socket.IO and Axios (Backend Connectivity)
+├── components/   # Reusable UI components
+├── screens/      # Register, Login, Home screens
+├── navigation/   # Navigation logic
+├── services/     # GPS and Location services
+├── store/        # Auth Context (Session state)
+└── utils/        # Constants and helpers
 ```
 
 ---
 
-## 🛠️ Development Tools
-
-### Test Ride Generator
-
-To simulate a ride request during development, use the built-in test generator available in the debug menu or designated testing screen.
-
----
-
-Developed with ❤️ by Banti Avchhare
+Developed with ❤️ by **Banti Avchhare**
