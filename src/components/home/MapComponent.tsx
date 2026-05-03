@@ -5,6 +5,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 interface MapComponentProps {
   currentLocation: any;
   onRecenter?: () => void;
+  hasPermission?: boolean | null;
 }
 
 const DEFAULT_REGION = {
@@ -14,7 +15,7 @@ const DEFAULT_REGION = {
   longitudeDelta: 20,
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ currentLocation }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ currentLocation, hasPermission }) => {
   const mapRef = useRef<MapView | null>(null);
 
   useEffect(() => {
@@ -52,8 +53,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentLocation }) => {
           latitudeDelta: 0.015,
           longitudeDelta: 0.0121,
         } : DEFAULT_REGION}
-        showsUserLocation={true}
-        followsUserLocation={true}
+        showsUserLocation={!!hasPermission}
+        followsUserLocation={!!hasPermission}
         showsMyLocationButton={false}
         onMapReady={() => console.log('Map is ready')}
         onRegionChangeComplete={(region) => console.log('Region changed:', region)}

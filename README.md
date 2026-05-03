@@ -31,6 +31,7 @@ A professional React Native application built for drivers, featuring real-time r
 ### Installation
 
 1. **Clone & Install**
+
    ```bash
    git clone https://github.com/Bunty76/Drivero.git
    cd Drivero
@@ -71,6 +72,10 @@ The project includes automated tests that simulate real user behavior on your de
     npx detox build --configuration android.att.debug
     ```
 2.  **Run the Tests**:
+    ensure you have started your backend server and metro server
+    ```bash
+    npx react-native start
+    ```
     ```bash
     npx detox test --configuration android.att.debug
     ```

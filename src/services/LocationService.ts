@@ -1,6 +1,21 @@
 import Geolocation from 'react-native-geolocation-service';
 import { PermissionsAndroid, Platform } from 'react-native';
 
+export const checkLocationPermission = async () => {
+  if (Platform.OS === 'ios') {
+    // For iOS, we usually just request or rely on the request call, 
+    // but Geolocation.requestAuthorization('whenInUse') is what we use.
+    return true; // Simplified for this fix
+  }
+
+  if (Platform.OS === 'android') {
+    return await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    );
+  }
+  return false;
+};
+
 export const requestLocationPermission = async () => {
   if (Platform.OS === 'ios') {
     const auth = await Geolocation.requestAuthorization('whenInUse');

@@ -28,11 +28,13 @@ const HomeScreen = () => {
   const { driverInfo, userToken, logout } = useContext(AuthContext);
   const [isOnline, setIsOnline] = useState(false);
   const [activeRide, setActiveRide] = useState<any>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   // Request permission on mount
   React.useEffect(() => {
     const checkPermission = async () => {
       const granted = await requestLocationPermission();
+      setHasPermission(granted);
       if (!granted) {
         Alert.alert(
           'Location Required',
@@ -44,7 +46,7 @@ const HomeScreen = () => {
   }, []);
 
   // Custom Hooks
-  const { currentLocation } = useLocation(isOnline, driverInfo?.id || driverInfo?._id);
+  const { currentLocation } = useLocation(isOnline, driverInfo?.id || driverInfo?._id, hasPermission);
   const { incomingRide, setIncomingRide, acceptRide, rejectRide } = useSocket(
     userToken,
     isOnline,
@@ -139,7 +141,7 @@ const HomeScreen = () => {
 
       {/* Map Section */}
       <View style={styles.mapContainer}>
-        <MapComponent currentLocation={currentLocation} />
+        <MapComponent currentLocation={currentLocation} hasPermission={hasPermission} />
       </View>
 
       {/* Test Ride Button */}

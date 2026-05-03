@@ -7,7 +7,7 @@ import {
 } from '../services/LocationService';
 import { getSocket } from '../api/socket';
 
-export const useLocation = (isOnline: boolean, driverId: string | null) => {
+export const useLocation = (isOnline: boolean, driverId: string | null, hasPermission: boolean | null) => {
   const [currentLocation, setCurrentLocation] = useState<any>(null);
   const watchIdRef = useRef<number | null>(null);
   const isOnlineRef = useRef(isOnline);
@@ -31,9 +31,12 @@ export const useLocation = (isOnline: boolean, driverId: string | null) => {
     // Prevent multiple watches
     stopTracking();
 
-    if (!mountedRef.current) return false;
+    if (!mountedRef.current || !hasPermission) return false;
 
     try {
+      // Small delay to let native system stabilize after permission grant
+      await new Promise(resolve => setTimeout(() => resolve(null), 500));
+
       // Fetch current location once immediately
       const position = await getCurrentLocation();
       if (mountedRef.current) {
@@ -65,11 +68,11 @@ export const useLocation = (isOnline: boolean, driverId: string | null) => {
       console.log('Error starting tracking:', error);
       return false;
     }
-  }, [stopTracking]);
+  }, [stopTracking, hasPermission]);
 
   useEffect(() => {
     mountedRef.current = true;
-    if (isOnline) {
+    if (isOnline && hasPermission) {
       startTracking();
     } else {
       stopTracking();
@@ -78,18 +81,24 @@ export const useLocation = (isOnline: boolean, driverId: string | null) => {
       mountedRef.current = false;
       stopTracking();
     };
-  }, [isOnline, startTracking, stopTracking]);
+  }, [isOnline, hasPermission, startTracking, stopTracking]);
 
-  // Initial location fetch on mount
+  // Initial location fetch when permission is granted
   useEffect(() => {
-    getCurrentLocation()
-      .then(pos => {
-        if (mountedRef.current) {
-          setCurrentLocation(pos.coords);
-        }
-      })
-      .catch(err => console.log('Initial location error', err));
-  }, []);
+    if (hasPermission) {
+      // Delay initial fetch slightly to avoid crash right after permission allow
+      const timer = setTimeout(() => {
+        getCurrentLocation()
+          .then(pos => {
+            if (mountedRef.current) {
+              setCurrentLocation(pos.coords);
+            }
+          })
+          .catch(err => console.log('Initial location error', err));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasPermission]);
 
   return { currentLocation, setCurrentLocation };
 };

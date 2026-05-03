@@ -2,52 +2,57 @@
 module.exports = {
   testRunner: {
     args: {
-      '$0': 'jest',
-      config: 'e2e/jest.config.js'
+      $0: 'jest',
+      config: 'e2e/jest.config.js',
     },
     jest: {
-      setupTimeout: 120000
-    }
+      setupTimeout: 120000,
+    },
   },
   apps: {
     'android.debug': {
       type: 'android.apk',
       binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
-      build: 'cd android && gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug --max-workers=1',
-      reversePorts: [8081]
+      build:
+        'cd android && gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug --max-workers=1',
+      launchArgs: {
+        detoxDisableSynchronization: 'YES',
+      },
+      reversePorts: [8081],
     },
     'android.release': {
       type: 'android.apk',
       binaryPath: 'android/app/build/outputs/apk/release/app-release.apk',
-      build: 'cd android && gradlew assembleRelease assembleAndroidTest -DtestBuildType=release'
-    }
+      build:
+        'cd android && gradlew assembleRelease assembleAndroidTest -DtestBuildType=release',
+    },
   },
   devices: {
     emulator: {
       type: 'android.emulator',
       device: {
-        avdName: 'Small_Phone'
-      }
+        avdName: 'Small_Phone',
+      },
     },
     attached: {
       type: 'android.attached',
       device: {
-        adbName: '.*'
-      }
-    }
+        adbName: '.*',
+      },
+    },
   },
   configurations: {
     'android.emu.debug': {
       device: 'emulator',
-      app: 'android.debug'
+      app: 'android.debug',
     },
     'android.emu.release': {
       device: 'emulator',
-      app: 'android.release'
+      app: 'android.release',
     },
     'android.att.debug': {
       device: 'attached',
-      app: 'android.debug'
-    }
-  }
+      app: 'android.debug',
+    },
+  },
 };
