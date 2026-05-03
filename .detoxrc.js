@@ -13,7 +13,7 @@ module.exports = {
     'android.debug': {
       type: 'android.apk',
       binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
-      build: 'cd android && gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug --max-workers=2',
+      build: 'cd android && gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug --max-workers=1',
       reversePorts: [8081]
     },
     'android.release': {

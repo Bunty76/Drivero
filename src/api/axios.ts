@@ -1,11 +1,11 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import Config from 'react-native-config';
+
 // --- CONFIGURATION ---
-// Toggle the line below to switch environments:
-export const BASE_URL = 'https://ridexbackend.onrender.com'; // 🟢 DEPLOYED (Production)
-// export const BASE_URL = 'http://10.0.2.2:5000';           // 📱 EMULATOR (Local)
-//export const BASE_URL = 'http://10.192.52.209:5000'; // 🔌 PHYSICAL DEVICE (Local)
+// BASE_URL is now pulled from the .env file using react-native-config
+export const BASE_URL = Config.API_URL || 'http://10.0.2.2:5000'; 
 // ----------------------
 
 const api = axios.create({

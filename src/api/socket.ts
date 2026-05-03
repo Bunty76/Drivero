@@ -12,6 +12,7 @@ export const initSocket = (token: string) => {
     auth: {
       token,
     },
+    transports: ['websocket'], // Faster and more reliable on mobile/Render
   });
 
   socket.on('connect', () => {

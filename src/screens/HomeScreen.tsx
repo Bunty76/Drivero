@@ -1,108 +1,71 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Switch,
   Alert,
-  Modal,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { AuthContext } from '../store/AuthContext';
-import { initSocket, getSocket, disconnectSocket } from '../api/socket';
 import api from '../api/axios';
-import {
-  requestLocationPermission,
-  getCurrentLocation,
-  watchLocation,
-  clearLocationWatch,
-} from '../services/LocationService';
 
+import { requestLocationPermission } from '../services/LocationService';
 
+// Hooks
+import { useSocket } from '../hooks/useSocket';
+import { useLocation } from '../hooks/useLocation';
+
+// Components
+import MapComponent from '../components/home/MapComponent';
+import StatusToggle from '../components/home/StatusToggle';
+import RideRequestModal from '../components/home/RideRequestModal';
+import ActiveRideCard from '../components/home/ActiveRideCard';
 
 const HomeScreen = () => {
   const { driverInfo, userToken, logout } = useContext(AuthContext);
   const [isOnline, setIsOnline] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<any>(null);
-  const [incomingRide, setIncomingRide] = useState<any>(null);
   const [activeRide, setActiveRide] = useState<any>(null);
-  const watchIdRef = useRef<number | null>(null);
+
+  // Request permission on mount
+  React.useEffect(() => {
+    const checkPermission = async () => {
+      const granted = await requestLocationPermission();
+      if (!granted) {
+        Alert.alert(
+          'Location Required',
+          'This app needs location access to show the map and track rides. Please enable it in settings.',
+        );
+      }
+    };
+    checkPermission();
+  }, []);
+
+  // Custom Hooks
+  const { currentLocation } = useLocation(isOnline, driverInfo?.id || driverInfo?._id);
+  const { incomingRide, setIncomingRide, acceptRide, rejectRide } = useSocket(
+    userToken,
+    isOnline,
+    activeRide
+  );
 
   const handleLogout = () => {
     if (isOnline) {
-      Alert.alert(
-        'Cannot Logout',
-        'Please go offline before logging out.',
-      );
+      Alert.alert('Action Required', 'Please go offline before logging out.');
       return;
     }
     logout();
   };
-
-  useEffect(() => {
-    if (userToken) {
-      const socket = initSocket(userToken);
-
-      socket.on('ride-request', (rideData: any) => {
-        console.log('New ride request received:', rideData);
-        if (!activeRide && isOnline) {
-          setIncomingRide(rideData);
-        }
-      });
-
-      socket.on('ride-cancelled', (data: any) => {
-        if (incomingRide?.id === data.rideId) {
-          setIncomingRide(null);
-          Alert.alert('Ride Cancelled', 'The passenger cancelled the request.');
-        }
-        if (activeRide?.id === data.rideId) {
-          setActiveRide(null);
-          Alert.alert('Ride Cancelled', 'The passenger cancelled the ride.');
-        }
-      });
-    }
-
-    return () => {
-      disconnectSocket();
-      if (watchIdRef.current !== null) {
-        clearLocationWatch(watchIdRef.current);
-      }
-    };
-  }, [userToken, activeRide, isOnline, incomingRide]);
 
   const toggleOnlineStatus = async (value: boolean) => {
     try {
       if (value) {
         const hasPermission = await requestLocationPermission();
         if (!hasPermission) {
-          Alert.alert(
-            'Permission Denied',
-            'Location access is required to go online.',
-          );
+          Alert.alert('Permission Denied', 'Location access is required to go online.');
           return;
-        }
-
-        const position = await getCurrentLocation();
-        setCurrentLocation(position.coords);
-
-        watchIdRef.current = watchLocation(
-          pos => {
-            setCurrentLocation(pos.coords);
-            const socket = getSocket();
-            if (socket) {
-              // Match backend expectations: event 'updateLocation' and coordinates [lng, lat]
-              socket.emit('updateLocation', {
-                driverId: driverInfo.id || driverInfo._id,
-                coordinates: [pos.coords.longitude, pos.coords.latitude],
-              });
-            }
-          },
-          err => console.log('Location watch error', err),
-        );
-      } else {
-        if (watchIdRef.current !== null) {
-          clearLocationWatch(watchIdRef.current);
-          watchIdRef.current = null;
         }
       }
 
@@ -112,356 +75,172 @@ const HomeScreen = () => {
       setIsOnline(value);
     } catch (error) {
       console.log('Status toggle error', error);
-      // Fallback for UI if backend fails
+      // Fallback for UI if backend fails (optimistic update)
       setIsOnline(value);
-      if (value && !watchIdRef.current) {
-        const hasPermission = await requestLocationPermission();
-        if (hasPermission) {
-          watchIdRef.current = watchLocation(pos =>
-            setCurrentLocation(pos.coords),
-          );
-        }
-      }
     }
   };
 
-  const handleAcceptRide = () => {
-    const socket = getSocket();
-    if (socket && incomingRide) {
-      socket.emit('accept-ride', {
-        rideId: incomingRide.id,
-        driverId: driverInfo.id,
-      });
+  const handleAccept = () => {
+    if (incomingRide) {
+      acceptRide(incomingRide.id, driverInfo.id);
       setActiveRide(incomingRide);
-      setIncomingRide(null);
     }
   };
 
-  const handleRejectRide = () => {
-    const socket = getSocket();
-    if (socket && incomingRide) {
-      socket.emit('reject-ride', {
-        rideId: incomingRide.id,
-        driverId: driverInfo.id,
-      });
-      setIncomingRide(null);
+  const handleReject = () => {
+    if (incomingRide) {
+      rejectRide(incomingRide.id, driverInfo.id);
     }
   };
 
   const generateTestRide = () => {
     if (!isOnline) {
-      Alert.alert('Go Online', 'You must be online to receive rides.');
+      Alert.alert('Status Offline', 'Go online to receive ride requests.');
       return;
     }
     setIncomingRide({
       id: `ride-${Math.floor(Math.random() * 1000)}`,
-      passengerName: 'John Doe',
-      pickupLocation: '123 Main St, City Center',
-      dropoffLocation: '456 Market St, Downtown',
-      estimatedPrice: '$15.50',
-      distance: '3.2 miles',
+      passengerName: 'Jessica Smith',
+      pickupLocation: 'Grand Central Terminal, NY',
+      dropoffLocation: 'Central Park West, NY',
+      estimatedPrice: '$24.50',
+      distance: '2.8 miles',
     });
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle} testID="HomeScreenHeader">
-          Welcome, {driverInfo?.name || 'Driver'}
-        </Text>
+        <View>
+          <Text style={styles.greeting}>Hello,</Text>
+          <Text style={styles.driverName} testID="HomeScreenHeader">
+            {driverInfo?.name || 'Driver'}
+          </Text>
+        </View>
         <TouchableOpacity 
           style={styles.logoutButton} 
           onPress={handleLogout}
+          activeOpacity={0.7}
           testID="LogoutButton"
         >
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.statusContainer}>
-        <View style={styles.statusTextContainer}>
-          <Text style={styles.statusLabel}>Current Status</Text>
-          <Text
-            style={[
-              styles.statusValue,
-              isOnline ? styles.statusValueOnline : styles.statusValueOffline,
-            ]}
-            testID="StatusValue"
-          >
-            {isOnline ? 'ONLINE' : 'OFFLINE'}
-          </Text>
-        </View>
-        <Switch
-          value={isOnline}
-          onValueChange={toggleOnlineStatus}
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={isOnline ? '#34C759' : '#f4f3f4'}
-          disabled={!!activeRide}
-          testID="OnlineStatusToggle"
-        />
+      {/* Online/Offline Status */}
+      <StatusToggle 
+        isOnline={isOnline} 
+        onToggle={toggleOnlineStatus} 
+        disabled={!!activeRide}
+      />
+
+      {/* Map Section */}
+      <View style={styles.mapContainer}>
+        <MapComponent currentLocation={currentLocation} />
       </View>
 
-      <View style={styles.mapPlaceholder}>
-        <Text style={styles.mapText}>Live Map Area</Text>
-        {currentLocation && (
-          <Text style={styles.coordsText}>
-            Lat: {currentLocation.latitude.toFixed(4)}
-            {'\n'}
-            Lng: {currentLocation.longitude.toFixed(4)}
-          </Text>
-        )}
-      </View>
-
-      {/* Test Ride Generator */}
-      <TouchableOpacity style={styles.testButton} onPress={generateTestRide}>
-        <Text style={styles.testButtonText}>🧪 Simulate Ride Request</Text>
+      {/* Test Ride Button */}
+      <TouchableOpacity 
+        style={styles.testButton} 
+        onPress={generateTestRide}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.testButtonText}>🚀 Simulate Ride Request</Text>
       </TouchableOpacity>
 
-      {/* Active Ride Info */}
+      {/* Active Ride Overlay */}
       {activeRide && (
-        <View style={styles.activeRideContainer}>
-          <Text style={styles.activeRideTitle}>Active Ride</Text>
-          <Text>Passenger: {activeRide.passengerName}</Text>
-          <Text>Pickup: {activeRide.pickupLocation}</Text>
-          <Text>Dropoff: {activeRide.dropoffLocation}</Text>
-          <TouchableOpacity
-            style={styles.completeButton}
-            onPress={() => setActiveRide(null)}
-          >
-            <Text style={styles.completeButtonText}>Complete Ride</Text>
-          </TouchableOpacity>
-        </View>
+        <ActiveRideCard 
+          ride={activeRide} 
+          onComplete={() => setActiveRide(null)} 
+        />
       )}
 
-      {/* Incoming Ride Modal */}
-      <Modal visible={!!incomingRide} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Ride Request</Text>
-              <Text style={styles.priceTag}>
-                {incomingRide?.estimatedPrice}
-              </Text>
-            </View>
-
-            <View style={styles.rideDetails}>
-              <Text style={styles.detailText}>
-                👤 {incomingRide?.passengerName}
-              </Text>
-              <Text style={styles.detailText}>
-                📍 Pickup: {incomingRide?.pickupLocation}
-              </Text>
-              <Text style={styles.detailText}>
-                🏁 Dropoff: {incomingRide?.dropoffLocation}
-              </Text>
-              <Text style={styles.detailText}>
-                📏 Distance: {incomingRide?.distance}
-              </Text>
-            </View>
-
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.rejectBtn]}
-                onPress={handleRejectRide}
-              >
-                <Text style={styles.actionBtnText}>Reject</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.acceptBtn]}
-                onPress={handleAcceptRide}
-              >
-                <Text style={styles.actionBtnText}>Accept</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </View>
+      {/* Incoming Request Modal */}
+      <RideRequestModal
+        visible={!!incomingRide}
+        ride={incomingRide}
+        onAccept={handleAccept}
+        onReject={handleReject}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8F9FA',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 25,
+    paddingVertical: 20,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingTop: 50, // for notch
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  greeting: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '600',
+  },
+  driverName: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#1C1C1E',
   },
   logoutButton: {
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 12,
+    backgroundColor: '#FFF5F5',
   },
   logoutText: {
     color: '#FF3B30',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 14,
   },
-  statusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    margin: 20,
-    padding: 20,
-    borderRadius: 12,
+  mapContainer: {
+    flex: 1,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 30,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statusTextContainer: {
-    flex: 1,
-  },
-  statusLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  statusValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  statusValueOnline: {
-    color: '#34C759',
-  },
-  statusValueOffline: {
-    color: '#FF3B30',
-  },
-  mapPlaceholder: {
-    flex: 1,
-    backgroundColor: '#e1e4e8',
-    margin: 20,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#d1d5da',
-    borderStyle: 'dashed',
-  },
-  mapText: {
-    fontSize: 18,
-    color: '#6a737d',
-    fontWeight: 'bold',
-  },
-  coordsText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#586069',
-    textAlign: 'center',
+    shadowRadius: 15,
+    elevation: 5,
   },
   testButton: {
     backgroundColor: '#5856D6',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    padding: 15,
-    borderRadius: 10,
+    marginHorizontal: 25,
+    marginBottom: 25,
+    paddingVertical: 18,
+    borderRadius: 20,
     alignItems: 'center',
+    shadowColor: '#5856D6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   testButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '800',
     fontSize: 16,
-  },
-  activeRideContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  activeRideTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 10,
-  },
-  completeButton: {
-    backgroundColor: '#34C759',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 15,
-  },
-  completeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 25,
-    paddingBottom: 40,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  priceTag: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#34C759',
-  },
-  rideDetails: {
-    marginBottom: 25,
-  },
-  detailText: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#333',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionBtn: {
-    flex: 1,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  rejectBtn: {
-    backgroundColor: '#FF3B30',
-    marginRight: 10,
-  },
-  acceptBtn: {
-    backgroundColor: '#007AFF',
-    marginLeft: 10,
-  },
-  actionBtnText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });
 
