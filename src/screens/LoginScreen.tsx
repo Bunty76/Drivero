@@ -37,20 +37,12 @@ const LoginScreen = () => {
       await login(token, userData);
     } catch (error: any) {
       console.log('Login error', error?.response?.data || error.message);
-
-      // Fallback for demonstration/testing if backend is not fully ready
-      Alert.alert(
-        'Login Failed',
-        'Could not connect to backend. Do you want to use a mock login for testing?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Use Mock Login',
-            onPress: () =>
-              login('mock-jwt-token', { id: 'd1', name: 'Mock Driver', email }),
-          },
-        ],
-      );
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'An unexpected error occurred during login.';
+        
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setLoading(false);
     }

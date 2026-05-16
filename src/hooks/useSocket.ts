@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { initSocket, getSocket, disconnectSocket } from '../api/socket';
+import api from '../api/axios';
 import { Alert } from 'react-native';
 
 export const useSocket = (userToken: string | null, isOnline: boolean, activeRide: any) => {
@@ -36,30 +37,64 @@ export const useSocket = (userToken: string | null, isOnline: boolean, activeRid
       }
     };
 
-    socket.on('ride-request', handleRideRequest);
-    socket.on('ride-cancelled', handleRideCancelled);
+    socket.on('newRideRequest', handleRideRequest);
+    socket.on('rideCancelled', handleRideCancelled);
 
     return () => {
       console.log('Cleaning up socket...');
-      socket.off('ride-request', handleRideRequest);
-      socket.off('ride-cancelled', handleRideCancelled);
+      socket.off('newRideRequest', handleRideRequest);
+      socket.off('rideCancelled', handleRideCancelled);
       disconnectSocket();
     };
   }, [userToken]); // Only re-init if token changes
 
-  const acceptRide = useCallback((rideId: string, driverId: string) => {
-    const socket = getSocket();
-    if (socket) {
-      socket.emit('accept-ride', { rideId, driverId });
+  const acceptRide = useCallback(async (rideId: string, driverId: string) => {
+    // Check if this is a mock ride from the TestRideGenerator
+    if (rideId.startsWith('ride_')) {
+      console.log('Accepting mock ride locally...');
+      setIncomingRide(null);
+      return { 
+        ...incomingRideRef.current, 
+        status: 'ACCEPTED', 
+        otp: '1234',
+        driver: driverId 
+      };
+    }
+
+    try {
+      const response = await api.patch(`/rides/${rideId}/accept`, { driverId });
+      setIncomingRide(null);
+      return response.data;
+    } catch (error) {
+      console.log('Accept ride error:', error);
+      Alert.alert('Error', 'Failed to accept ride. It may have been taken.');
+      setIncomingRide(null);
+      return null;
+    }
+  }, []);
+
+  const rejectRide = useCallback(async (rideId: string, driverId: string) => {
+    if (rideId.startsWith('ride_')) {
+      setIncomingRide(null);
+      return;
+    }
+
+    try {
+      await api.patch(`/rides/${rideId}/reject`, { driverId });
+      setIncomingRide(null);
+    } catch (error) {
       setIncomingRide(null);
     }
   }, []);
 
-  const rejectRide = useCallback((rideId: string, driverId: string) => {
-    const socket = getSocket();
-    if (socket) {
-      socket.emit('reject-ride', { rideId, driverId });
-      setIncomingRide(null);
+  const startRide = useCallback(async (rideId: string, otp: string) => {
+    try {
+      const response = await api.patch(`/rides/${rideId}/start`, { otp });
+      return response.data;
+    } catch (error: any) {
+      console.log('Start ride error:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to start ride');
+      return null;
     }
   }, []);
 
@@ -68,6 +103,7 @@ export const useSocket = (userToken: string | null, isOnline: boolean, activeRid
     setIncomingRide,
     acceptRide,
     rejectRide,
+    startRide,
     socket: getSocket(),
   };
 };

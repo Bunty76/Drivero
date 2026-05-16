@@ -25,7 +25,7 @@ const RideRequestModal: React.FC<RideRequestModalProps> = ({
               <Text style={styles.modalSubtitle}>New Ride Request</Text>
               <Text style={styles.modalTitle}>{ride.passengerName}</Text>
             </View>
-            <Text style={styles.priceTag}>{ride.estimatedPrice}</Text>
+            <Text style={styles.priceTag}>{ride.fare ? `₹${ride.fare}` : (ride.estimatedPrice || '₹0')}</Text>
           </View>
 
           <View style={styles.divider} />
@@ -35,7 +35,7 @@ const RideRequestModal: React.FC<RideRequestModalProps> = ({
               <Text style={styles.detailIcon}>📍</Text>
               <View style={styles.detailTextContainer}>
                 <Text style={styles.detailLabel}>PICKUP</Text>
-                <Text style={styles.detailText}>{ride.pickupLocation}</Text>
+                <Text style={styles.detailText}>{ride.pickupLocation?.address || ride.pickupLocation}</Text>
               </View>
             </View>
             
@@ -43,14 +43,14 @@ const RideRequestModal: React.FC<RideRequestModalProps> = ({
               <Text style={styles.detailIcon}>🏁</Text>
               <View style={styles.detailTextContainer}>
                 <Text style={styles.detailLabel}>DROPOFF</Text>
-                <Text style={styles.detailText}>{ride.dropoffLocation}</Text>
+                <Text style={styles.detailText}>{ride.dropoffLocation?.address || ride.dropoffLocation}</Text>
               </View>
             </View>
 
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
                 <Text style={styles.statLabel}>DISTANCE</Text>
-                <Text style={styles.statValue}>{ride.distance}</Text>
+                <Text style={styles.statValue}>{ride.distance}{typeof ride.distance === 'number' ? ' km' : ''}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={styles.statLabel}>RATING</Text>

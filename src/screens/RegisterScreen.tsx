@@ -16,12 +16,17 @@ const RegisterScreen = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [vehicleType, setVehicleType] = useState('economy');
+  const [vehicleModel, setVehicleModel] = useState('');
+  const [plateNumber, setPlateNumber] = useState('');
+  const [color, setColor] = useState('');
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<any>();
 
   const handleRegister = async () => {
-    if (!name || !email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!name || !email || !password || !phone || !vehicleModel || !plateNumber || !color) {
+      Alert.alert('Error', 'Please fill in all fields including vehicle details');
       return;
     }
 
@@ -31,6 +36,13 @@ const RegisterScreen = () => {
         name,
         email,
         password,
+        phone,
+        vehicle: {
+          type: vehicleType,
+          model: vehicleModel,
+          plateNumber,
+          color,
+        }
       });
 
       if (response.status === 201) {
@@ -82,6 +94,52 @@ const RegisterScreen = () => {
           onChangeText={setPassword}
           secureTextEntry
           testID="RegisterPasswordInput"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Phone Number"
+          placeholderTextColor="#999"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
+
+        <Text style={styles.sectionTitle}>Vehicle Details</Text>
+        <View style={styles.vehicleTypeContainer}>
+          {['bike', 'auto', 'economy', 'premium'].map(type => (
+            <TouchableOpacity 
+              key={type} 
+              style={[styles.typeButton, vehicleType === type && styles.typeButtonSelected]}
+              onPress={() => setVehicleType(type)}
+            >
+              <Text style={[styles.typeButtonText, vehicleType === type && styles.typeButtonTextSelected]}>
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Vehicle Model (e.g., Swift Dzire)"
+          placeholderTextColor="#999"
+          value={vehicleModel}
+          onChangeText={setVehicleModel}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Plate Number (e.g., MH01AB1234)"
+          placeholderTextColor="#999"
+          value={plateNumber}
+          onChangeText={setPlateNumber}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Vehicle Color"
+          placeholderTextColor="#999"
+          value={color}
+          onChangeText={setColor}
         />
 
         <TouchableOpacity
@@ -174,6 +232,39 @@ const styles = StyleSheet.create({
   linkHighlight: {
     color: '#007AFF',
     fontWeight: 'bold',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  vehicleTypeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  typeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 10,
+    backgroundColor: '#f9f9f9',
+  },
+  typeButtonSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  typeButtonText: {
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  typeButtonTextSelected: {
+    color: '#fff',
   },
 });
 
