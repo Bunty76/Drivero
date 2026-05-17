@@ -1,0 +1,7 @@
+// init.gradle script to work around Foojay plugin compatibility issues
+import org.gradle.jvm.toolchain.JvmVendorSpec
+
+// Add the missing IBM_SEMERU vendor spec if it doesn't exist
+if (!JvmVendorSpec.metaClass.hasProperty('IBM_SEMERU')) {
+    JvmVendorSpec.metaClass.static.IBM_SEMERU = new JvmVendorSpec('IBM_SEMERU')
+}

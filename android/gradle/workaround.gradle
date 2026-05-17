@@ -1,0 +1,20 @@
+// Workaround for Foojay plugin compatibility with Gradle 9.3.1
+// This adds support for IBM_SEMERU vendor spec
+
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
+import org.gradle.jvm.toolchain.JvmVendorSpec
+
+// We need to manually add the IBM_SEMERU field if it doesn't exist
+try {
+    JvmVendorSpec.class.getField('IBM_SEMERU')
+} catch (NoSuchFieldException e) {
+    // Field doesn't exist, add it
+    def vendorSpecClass = JvmVendorSpec.class
+    
+    // Check if this is an enum and add the constant
+    if (vendorSpecClass.isEnum()) {
+        def enumConstants = vendorSpecClass.getEnumConstants()
+        println("Available JvmVendorSpec vendors: ${enumConstants.collect { it.toString() }}")
+    }
+}

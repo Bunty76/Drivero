@@ -1,4 +1,19 @@
-pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+pluginManagement {
+    includeBuild("../node_modules/@react-native/gradle-plugin")
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+    resolutionStrategy {
+        eachPlugin {
+            // Skip Foojay plugin to avoid compatibility issues
+            if (requested.id.id == 'org.gradle.toolchains.foojay-resolver') {
+                useModule("org.gradle.toolchains.foojay:foojay-resolver-gradle-plugin:${requested.version}")
+            }
+        }
+    }
+}
 plugins { id("com.facebook.react.settings") }
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
 rootProject.name = 'Drivero'

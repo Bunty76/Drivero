@@ -1,0 +1,15 @@
+gradle.settingsEvaluated { settings ->
+    settings.plugins.withId("jvm-toolchain") {
+        settings.extensions.getByType(JavaToolchainExtension).languageVersion.set(JavaLanguageVersion.of(System.getProperty("java.version").split('\\.')[0]))
+    }
+}
+
+allprojects {
+    tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        javaCompiler.set(javaToolchains.compilerFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        })
+    }
+}

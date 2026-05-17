@@ -1,0 +1,5 @@
+# Android SDK Configuration
+# Uncomment and set the path to your Android SDK
+# sdk.dir=/Users/username/Library/Android/Sdk  # macOS
+# sdk.dir=/home/username/Android/Sdk            # Linux
+# sdk.dir=C:\\Users\\username\\AppData\\Local\\Android\\Sdk  # Windows

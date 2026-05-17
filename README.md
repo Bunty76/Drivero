@@ -28,6 +28,13 @@ A professional React Native application built for drivers, featuring real-time r
 
 ## 🚀 Getting Started
 
+### Prerequisites
+
+⚠️ **Important**: Before building, please read [BUILD.md](./BUILD.md) for:
+- ✅ Correct Java version setup (Java 21 required)
+- ✅ Android SDK configuration
+- ✅ Environment variables
+
 ### Installation
 
 1. **Clone & Install**
@@ -109,6 +116,27 @@ src/
 ├── store/        # Auth & State management
 └── hooks/        # Custom reusable logic
 ```
+
+---
+
+## 🛠️ Troubleshooting
+
+Having build issues? Check these guides:
+
+- **[BUILD.md](./BUILD.md)** - Detailed build setup and requirements
+- **[GRADLE_TROUBLESHOOTING.md](./GRADLE_TROUBLESHOOTING.md)** - Common errors and fixes
+- **Quick setup**: Run `./setup-build.sh` to verify your environment
+
+### Frequent Issues
+
+| Issue | Solution |
+|-------|----------|
+| `NoSuchFieldError: IBM_SEMERU` | Use Java 21, Gradle 8.13 |
+| `SDK location not found` | Set `ANDROID_HOME` or create `android/local.properties` |
+| `Missing .env file` | Copy `.env.example` to `.env` |
+| Build fails with Java 25 | Switch to Java 21 |
+
+See **[GRADLE_TROUBLESHOOTING.md](./GRADLE_TROUBLESHOOTING.md)** for detailed solutions.
 
 ---
 
